@@ -7,7 +7,8 @@ from keras.layers import Dense, Dropout
 
 
 class Field:
-    N = 3
+    N = 5
+    WIN_COMPINATION_LENGTH = 3
 
     _win_combination = np.array([1, 1, 1])
     _lose_combination = np.array([-1, -1, -1])
@@ -23,25 +24,45 @@ class Field:
         self._field = np.array(combination).reshape(self.N, self.N)
 
     def reward(self):
+        """
+        :return:
+        1 - x win
+        0 - 0 win
+        0.5 - draw or unknown
+        """
         for i in range(self.N):
-            if np.array_equal(self._field[:, i], self._lose_combination) or np.array_equal(self._field[i, :], self._lose_combination):
-                return 0
+            x = self._field[:, i]
+            y = self._field[i, :]
 
-            if np.array_equal(self._field[:, i], self._win_combination) or np.array_equal(self._field[i, :], self._win_combination):
-                return 1
+            # Checking rows and columns
+            for j in range(self.N - self.WIN_COMPINATION_LENGTH+1):
+                for arr in (x, y):
+                    s = sum(arr[j:j+self.WIN_COMPINATION_LENGTH])
 
-            if np.array_equal(np.diag(self._field), self._lose_combination):
-                return 0
+                    if s == -self.WIN_COMPINATION_LENGTH:
+                        return 0
 
-            if np.array_equal(np.diag(self._field), self._win_combination):
-                return 1
+                    if s == self.WIN_COMPINATION_LENGTH:
+                        return 1
+
+            # Checking diagonals
+            diag1 = np.diagonal(self._field, offset=i)
+            diag2 = np.diagonal(self._field, offset=-i)
 
             _reversed = np.flip(self._field, 0)
-            if np.array_equal(_reversed, self._lose_combination):
-                return 0
 
-            if np.array_equal(_reversed, self._win_combination):
-                return 1
+            diag3 = np.diagonal(_reversed, offset=i)
+            diag4 = np.diagonal(_reversed, offset=-i)
+
+            for j in range(len(diag1) - self.WIN_COMPINATION_LENGTH+1):
+                for diag in (diag1, diag2, diag3, diag4):
+                    s = sum(diag[j:j+self.WIN_COMPINATION_LENGTH])
+
+                    if s == -self.WIN_COMPINATION_LENGTH:
+                        return 0
+
+                    if s == self.WIN_COMPINATION_LENGTH:
+                        return 1
 
         return 0.5
 
@@ -98,12 +119,14 @@ class Field:
 
 
 if __name__ == '__main__':
-    NUM_SAMPLES_TO_LEARN = 100
+    NUM_SAMPLES_TO_LEARN = 1000
 
     print('training network on {} random samples'.format(NUM_SAMPLES_TO_LEARN))
 
+    n = Field.N * Field.N
+
     model = Sequential()
-    model.add(Dense(12, input_dim=9, activation='relu'))
+    model.add(Dense(12, input_dim=n, activation='relu'))
     model.add(Dropout(0.1))
     model.add(Dense(8, activation='relu'))
     model.add(Dropout(0.1))
@@ -118,7 +141,7 @@ if __name__ == '__main__':
     rewards = list()
 
     for i in range(NUM_SAMPLES_TO_LEARN):
-        sample = [random.randint(-1, 1) for _ in range(9)]
+        sample = [random.randint(-1, 1) for _ in range(n)]
         reward = Field(sample).reward()
 
         samples.append(sample)
@@ -154,7 +177,7 @@ if __name__ == '__main__':
                 for action in actions:
                     possible_field = f.apply_action(action, player)
                     reward = model.predict(possible_field)
-                    print('Action: {} Reward: {}'.format(possible_field, reward))
+                    #print('Action: {} Reward: {}'.format(possible_field, reward))
 
                     if (player == 1 and reward > best_reward) or (player == 2 and reward < best_reward):
                         best_reward = reward
@@ -176,7 +199,7 @@ if __name__ == '__main__':
 
                 f.update((i, j), player)
 
-            print(f)
+            print(f, f.reward())
 
             cur_reward = f.reward()
 
