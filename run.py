@@ -43,7 +43,7 @@ class Field:
             if np.array_equal(_reversed, self._win_combination):
                 return 1
 
-            return 0.5
+        return 0.5
 
     def get_actions(self):
         """
