@@ -1,6 +1,7 @@
 ## Tic-tac-toe reinforcement learning example
 
-Just for fun example how to learn semple feed-forward Neural network to play tic-tac-toe game.
+Example how to learn sample Q-learning algorithm to play tic-tac-toe game
+or custom-sized fields.
 
 Run to learn and play with computer:
 ```
@@ -10,4 +11,5 @@ python3 run.py
 ```
 
 Features:
-- random size field supported
+- Random size field supported
+- Increase number of iterations to learn if you want to fight with strong computer!
