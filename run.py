@@ -27,6 +27,8 @@ class Field:
         0 - 0 win
         0.5 - draw or unknown
         """
+        m = 0
+
         for i in range(self.N):
             x = self._field[:, i]
             y = self._field[i, :]
@@ -41,6 +43,12 @@ class Field:
 
                     if s == self.WIN_COMPINATION_LENGTH:
                         return 1
+
+                    if s == self.WIN_COMPINATION_LENGTH - 1:
+                        return 0.75
+
+                    if s == self.WIN_COMPINATION_LENGTH - 1:
+                        return 0.25
 
             # Checking diagonals
             diag1 = np.diagonal(self._field, offset=i)
@@ -60,6 +68,13 @@ class Field:
 
                     if s == self.WIN_COMPINATION_LENGTH:
                         return 1
+
+                    if s == self.WIN_COMPINATION_LENGTH - 1:
+                        return 0.75
+
+                    if s == self.WIN_COMPINATION_LENGTH - 1:
+                        return 0.25
+
 
         return 0.5
 
@@ -144,7 +159,7 @@ class StateRegistry:
 
 
 if __name__ == '__main__':
-    NUM_SAMPLES_TO_LEARN = 20000
+    NUM_SAMPLES_TO_LEARN = 90000
 
     # learning rate
     LR = 0.1
