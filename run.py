@@ -39,7 +39,7 @@ class Field:
                     s = sum(arr[j:j+self.WIN_COMPINATION_LENGTH])
 
                     if s == -self.WIN_COMPINATION_LENGTH:
-                        return 0
+                        return -1
 
                     if s == self.WIN_COMPINATION_LENGTH:
                         return 1
@@ -48,7 +48,7 @@ class Field:
                         return 0.75
 
                     if s == self.WIN_COMPINATION_LENGTH - 1:
-                        return 0.25
+                        return -0.75
 
             # Checking diagonals
             diag1 = np.diagonal(self._field, offset=i)
@@ -70,13 +70,12 @@ class Field:
                         return 1
 
                     if s == self.WIN_COMPINATION_LENGTH - 1:
-                        return 0.75
+                        return -0.75
 
                     if s == self.WIN_COMPINATION_LENGTH - 1:
-                        return 0.25
+                        return -0.75
 
-
-        return 0.5
+        return 0
 
     def get_actions(self):
         """
@@ -159,12 +158,12 @@ class StateRegistry:
 
 
 if __name__ == '__main__':
-    NUM_SAMPLES_TO_LEARN = 90000
+    NUM_SAMPLES_TO_LEARN = 1000000
 
     # learning rate
-    LR = 0.1
+    LR = 0.3
     # discount factor
-    DF = 0.1
+    DF = 0.9
 
     print('training network on {} random samples'.format(NUM_SAMPLES_TO_LEARN))
 
@@ -173,6 +172,9 @@ if __name__ == '__main__':
     n = Field.N * Field.N
 
     for i in range(NUM_SAMPLES_TO_LEARN):
+        if i % 10000 == 0:
+            print("Done: {}/{}".format(i, NUM_SAMPLES_TO_LEARN))
+
         state = Field([random.randint(-1, 1) for _ in range(n)])
         cur_reward = state.reward()
 
@@ -249,7 +251,7 @@ if __name__ == '__main__':
             if player == computer_number:
                 print('Player {}:'.format(player))
 
-                best_reward = 0 if player == 1 else 2
+                best_reward = -9999999 if player == 1 else 9999999
                 best_action = actions[0]
 
                 for action in actions:
@@ -257,7 +259,7 @@ if __name__ == '__main__':
                     #reward = model.predict(possible_field)
                     reward = registry.get(f, action, player)
 
-                    #print('Action: {} Reward: {}'.format(possible_field, reward))
+                    #print('Action: {} Reward: {}'.format(action, reward))
 
                     if (player == 1 and reward > best_reward) or (player == 2 and reward < best_reward) or (reward == best_reward and random.randint(0,2) == 2):
                         best_reward = reward
@@ -288,7 +290,7 @@ if __name__ == '__main__':
                 is_finished = True
                 break
 
-            if cur_reward == 0:
+            if cur_reward == -1:
                 print('Player 2 win')
                 is_finished = True
                 break

@@ -9,6 +9,5 @@ pip install -r requirements.txt
 python3 run.py
 ```
 
-TODO:
-- better reward function
-- fields more then 3x3
+Features:
+- random size field supported
