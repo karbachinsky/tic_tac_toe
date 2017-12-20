@@ -1,0 +1,6 @@
+*.swn
+*.swo
+*.swp
+.venv
+.venv3
+.idea
