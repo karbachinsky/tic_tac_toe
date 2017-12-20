@@ -10,9 +10,6 @@ class Field:
     N = 5
     WIN_COMPINATION_LENGTH = 3
 
-    _win_combination = np.array([1, 1, 1])
-    _lose_combination = np.array([-1, -1, -1])
-
     HUMAN_FIELDS = {
         -1: '0',
         1: 'X',
@@ -20,7 +17,7 @@ class Field:
     }
 
     def __init__(self, combination):
-        assert isinstance(combination, (list, tuple)) and len(combination) == self.N*self.N
+        assert isinstance(combination, (list, tuple, np.ndarray)) and len(combination) == self.N*self.N
         self._field = np.array(combination).reshape(self.N, self.N)
 
     def reward(self):
@@ -104,6 +101,9 @@ class Field:
 
         return vector.reshape(1, self.N*self.N)
 
+    def hash_with_action(self, action):
+        return hash(tuple(self._field.reshape(self.N*self.N))) + hash(action)
+
     def __str__(self):
         return '\n'.join(
             [
@@ -118,13 +118,75 @@ class Field:
         )
 
 
+
+class StateRegistry:
+    """
+    This is Q[s,a] in Q-learning algorithm
+    """
+    def __init__(self):
+        # field -> reward
+        self.states = dict()
+
+    def add(self, field, action, reward):
+        assert isinstance(field, Field)
+
+        k = field.hash_with_action(action)
+
+        self.states[k] = reward
+
+    def get(self, field, action, player):
+        k = field.hash_with_action(action)
+        if k in self.states:
+            return self.states[k]
+
+        # default
+        return Field(field.apply_action(action, player).reshape(Field.N * Field.N)).reward()
+
+
 if __name__ == '__main__':
-    NUM_SAMPLES_TO_LEARN = 1000
+    NUM_SAMPLES_TO_LEARN = 20000
+
+    # learning rate
+    LR = 0.1
+    # discount factor
+    DF = 0.1
 
     print('training network on {} random samples'.format(NUM_SAMPLES_TO_LEARN))
 
+    registry = StateRegistry()
+
     n = Field.N * Field.N
 
+    for i in range(NUM_SAMPLES_TO_LEARN):
+        state = Field([random.randint(-1, 1) for _ in range(n)])
+        cur_reward = state.reward()
+
+        # Choose random action
+        actions = state.get_actions()
+
+        if len(actions) == 0 or state.reward() in (-1, 1):
+            continue
+
+        action = actions[random.randint(0, len(actions)-1)]
+
+        #assert False, type(state.apply_action(action, 1)[0])
+        new_state = Field(state.apply_action(action, 1)[0])
+        new_state_actions = new_state.get_actions()
+
+        # Q[s',a'] = Q[s',a'] + LF * (r + DF * MAX(Q,s) — Q[s',a'])
+        m = 0
+        for new_action in new_state_actions:
+            q = registry.get(new_state, new_action, 1)
+            if q > m:
+                m = q
+
+        cur_reward = (1-LR)*cur_reward + LR*(new_state.reward() + DF*m)
+
+        registry.add(state, action, cur_reward)
+
+        state.update(action, 1)
+
+    """
     model = Sequential()
     model.add(Dense(12, input_dim=n, activation='relu'))
     model.add(Dropout(0.1))
@@ -148,6 +210,7 @@ if __name__ == '__main__':
         rewards.append(reward)
 
     model.fit(samples, rewards, batch_size=32)
+    """
 
     print("Now let's play ...")
 
@@ -175,11 +238,13 @@ if __name__ == '__main__':
                 best_action = actions[0]
 
                 for action in actions:
-                    possible_field = f.apply_action(action, player)
-                    reward = model.predict(possible_field)
+                    #possible_field = f.apply_action(action, player)
+                    #reward = model.predict(possible_field)
+                    reward = registry.get(f, action, player)
+
                     #print('Action: {} Reward: {}'.format(possible_field, reward))
 
-                    if (player == 1 and reward > best_reward) or (player == 2 and reward < best_reward):
+                    if (player == 1 and reward > best_reward) or (player == 2 and reward < best_reward) or (reward == best_reward and random.randint(0,2) == 2):
                         best_reward = reward
                         best_action = action
 
